@@ -4,6 +4,7 @@
 #include <algorithm>
 
 using namespace std;
+
 bool StartsWithA(const string& x){
         if(!x.empty()){
            char first_letter = x[0];
