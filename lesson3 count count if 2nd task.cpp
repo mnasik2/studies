@@ -4,10 +4,10 @@
 #include <algorithm>
 
 using namespace std;
-bool StartsWithA(const string& y){
-        if(!y.empty()){
-           char first_letter = y[0];
-           return isupper(first_letter);
+bool StartsWithA(const string& x){
+        if(!x.empty()){
+           char first_letter = x[0];
+           return isupper(first_letter); //проверка первого символа
         }
         return false;
   }
