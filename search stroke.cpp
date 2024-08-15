@@ -1,9 +1,13 @@
 #include <iostream>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
+
+const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
 string ReadLine() {
     string s;
@@ -56,9 +60,10 @@ vector<string> SplitIntoWordsNoStop(const string& text, const set<string>& stop_
     return words;
 }
 
-void AddDocument(vector<pair<int, vector<string>>>& documents, const set<string>& stop_words, int document_id, const string& document) {
+void AddDocument(vector<pair<int, vector<string>>>& documents, const set<string>& stop_words,
+                 int document_id, const string& document) {
     const vector<string> words = SplitIntoWordsNoStop(document, stop_words);
-    documents.push_back({document_id,words});
+    documents.push_back(pair<int, vector<string>>{document_id, words});
 }
 
 set<string> ParseQuery(const string& text, const set<string>& stop_words) {
@@ -70,24 +75,45 @@ set<string> ParseQuery(const string& text, const set<string>& stop_words) {
 }
 
 int MatchDocument(const pair<int, vector<string>>& content, const set<string>& query_words) {
-int relevance = 0;
+    if (query_words.empty()) {
+        return 0;
+    }
+    set<string> matched_words;
     for (const string& word : content.second) {
-        if (query_words.count(word) > 0) {
-            ++relevance;
+        if (matched_words.count(word) != 0) {
+            continue;
+        }
+        if (query_words.count(word) != 0) {
+            matched_words.insert(word);
         }
     }
-    return relevance;
+
+    // Преобразовываем беззнаковое число типа size_t в int используя
+    // static_cast<int>
+    return static_cast<int>(matched_words.size());
 }
 
-// Для каждого найденного документа возвращает его id
-vector<pair<int, int>> FindDocuments(const vector<pair<int, vector<string>>>& documents, const set<string>& stop_words, const string& query) {
-    const set<string> query_words = ParseQuery(query, stop_words);
+// Для каждого документа возвращает его id и релевантность
+vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>& documents, const set<string>& query_words) {
     vector<pair<int, int>> matched_documents;
     for (const auto& document : documents) {
-        int relevance = MatchDocument(document, query_words);
+        const int relevance = MatchDocument(document, query_words);
         if (relevance > 0) {
             matched_documents.push_back({document.first, relevance});
         }
+    }
+    return matched_documents;
+}
+bool CompareSecond(const pair<int, int>& first_rel , const pair<int,int>& second_rel){
+    return first_rel.second > second_rel.second;
+  // вернём true, если первый элемент больше , чем второй
+}
+vector<pair<int, int>> FindTopDocuments(const vector<pair<int, vector<string>>>& documents, const set<string>& stop_words, const string& raw_query) {
+    const set<string> query_words = ParseQuery(raw_query, stop_words);
+    auto matched_documents = FindAllDocuments(documents, query_words);
+    sort(matched_documents.begin(), matched_documents.end(), CompareSecond);
+    if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
+        matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
     }
     return matched_documents;
 }
@@ -96,7 +122,7 @@ int main() {
     const string stop_words_joined = ReadLine();
     const set<string> stop_words = ParseStopWords(stop_words_joined);
 
-    // Считываем документы
+    // Чтение документов
     vector<pair<int, vector<string>>> documents;
     const int document_count = ReadLineWithNumber();
     for (int document_id = 0; document_id < document_count; ++document_id) {
@@ -104,9 +130,9 @@ int main() {
     }
 
     const string query = ReadLine();
-    for (const auto& result : FindDocuments(documents, stop_words, query)) {
-    int document_id = result.first;
-    int relevance = result.second;
-    cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s << endl;
-}
+    // Вместо FindDocuments используйте FindTopDocuments
+    for (auto [document_id, relevance] : FindTopDocuments(documents, stop_words, query)) {
+        cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s
+             << endl;
+    }
 }
