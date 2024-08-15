@@ -105,7 +105,7 @@ vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>&
     return matched_documents;
 }
 bool CompareSecond(const pair<int, int>& first_rel , const pair<int,int>& second_rel){
-    return first_rel.second > second_rel.second;
+    return first_rel.second >= second_rel.second && first_rel.first > second_rel.first;
   // вернём true, если первый элемент больше , чем второй
 }
 vector<pair<int, int>> FindTopDocuments(const vector<pair<int, vector<string>>>& documents, const set<string>& stop_words, const string& raw_query) {
