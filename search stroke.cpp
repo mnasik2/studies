@@ -104,7 +104,9 @@ int main() {
     }
 
     const string query = ReadLine();
-     for (auto [document_id, relevance] : FindDocuments(documents, stop_words, query)) {
-        cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s << endl;
-    }
+    for (const auto& result : FindDocuments(documents, stop_words, query)) {
+    int document_id = result.first;
+    int relevance = result.second;
+    cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s << endl;
+}
 }
