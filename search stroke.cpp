@@ -8,20 +8,20 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
-
-string ReadLine() {
+//читаем строку
+string ReadLine() { 
     string s;
     getline(cin, s);
     return s;
 }
-
-int ReadLineWithNumber() {
+//читаем номер
+int ReadLineWithNumber() { 
     int result = 0;
     cin >> result;
     ReadLine();
     return result;
 }
-
+//разбиваем прочитанную строку на слова
 vector<string> SplitIntoWords(const string& text) {
     vector<string> words;
     string word;
@@ -41,7 +41,7 @@ vector<string> SplitIntoWords(const string& text) {
 
     return words;
 }
-
+//читаем стоп-слова
 set<string> ParseStopWords(const string& text) {
     set<string> stop_words;
     for (const string& word : SplitIntoWords(text)) {
@@ -49,7 +49,7 @@ set<string> ParseStopWords(const string& text) {
     }
     return stop_words;
 }
-
+//разбиваем строку на слова, исключая стоп-слова
 vector<string> SplitIntoWordsNoStop(const string& text, const set<string>& stop_words) {
     vector<string> words;
     for (const string& word : SplitIntoWords(text)) {
@@ -59,12 +59,12 @@ vector<string> SplitIntoWordsNoStop(const string& text, const set<string>& stop_
     }
     return words;
 }
-
+//добавлена новая структура взамен pair<int, string>
 struct DocumentContent{
     int id;
     vector<string> words;
 };
-
+//добавлена новая структура взамен pair<int, int>
 struct Document {
     int id;
     int relevance;
