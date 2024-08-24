@@ -75,7 +75,7 @@ void AddDocument(vector<DocumentContent>& documents, const set<string>& stop_wor
     const vector<string> words = SplitIntoWordsNoStop(document, stop_words);
     documents.push_back({document_id, words});
 }
-//
+
 set<string> ParseQuery(const string& text, const set<string>& stop_words) {
     set<string> query_words;
     for (const string& word : SplitIntoWordsNoStop(text, stop_words)) {
@@ -83,7 +83,7 @@ set<string> ParseQuery(const string& text, const set<string>& stop_words) {
     }
     return query_words;
 }
-//
+
 int MatchDocument(const DocumentContent& content, const set<string>& query_words) {
     if (query_words.empty()) {
         return 0;
