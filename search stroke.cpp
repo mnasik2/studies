@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <map>
 
 using namespace std;
 
@@ -18,7 +19,7 @@ string ReadLine() {
 int ReadLineWithNumber() {
     int result = 0;
     cin >> result;
-    ReadLine(); // Потребление символа новой строки после числа
+    ReadLine();
     return result;
 }
 
@@ -56,7 +57,9 @@ public:
 
     void AddDocument(int document_id, const string& document) {
         const vector<string> words = SplitIntoWordsNoStop(document);
-        documents_.push_back({document_id, words});
+        for (const string& word : words) {
+            word_to_documents_[word].insert(document_id);
+        }
     }
 
     vector<Document> FindTopDocuments(const string& raw_query) const {
@@ -75,13 +78,8 @@ public:
     }
 
 private:
-    struct DocumentContent {
-        int id = 0;
-        vector<string> words;
-    };
-
     set<string> stop_words_;
-    vector<DocumentContent> documents_;
+    map<string, set<int>> word_to_documents_;
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
@@ -115,31 +113,33 @@ private:
     }
 
     vector<Document> FindAllDocuments(const Query& query) const {
+        map<int, int> document_to_relevance;
+
+        // Обработка плюсовых слов
+        for (const string& word : query.plus_words) {
+            if (word_to_documents_.count(word) > 0) {
+                for (const int document_id : word_to_documents_.at(word)) {
+                    document_to_relevance[document_id]++;
+                }
+            }
+        }
+
+        // Обработка минусовых слов
+        for (const string& word : query.minus_words) {
+            if (word_to_documents_.count(word) > 0) {
+                for (const int document_id : word_to_documents_.at(word)) {
+                    document_to_relevance.erase(document_id);
+                }
+            }
+        }
+
+        // Переносим результаты в вектор
         vector<Document> matched_documents;
-        for (const auto& document : documents_) {
-            int relevance = MatchDocument(document, query);
-            if (relevance > 0) {
-                matched_documents.push_back({document.id, relevance});
-            }
+        for (const auto& [document_id, relevance] : document_to_relevance) {
+            matched_documents.push_back({document_id, relevance});
         }
+
         return matched_documents;
-    }
-
-    static int MatchDocument(const DocumentContent& content, const Query& query) {
-        if (query.plus_words.empty() && query.minus_words.empty()) {
-            return 0;
-        }
-
-        set<string> matched_words;
-        for (const string& word : content.words) {
-            if (query.minus_words.count(word) > 0) {
-                return 0; // Если слово с минусом найдено, документ не подходит
-            }
-            if (query.plus_words.count(word) > 0) {
-                matched_words.insert(word);
-            }
-        }
-        return static_cast<int>(matched_words.size());
     }
 };
 
