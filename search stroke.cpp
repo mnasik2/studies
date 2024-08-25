@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 #include <map>
+#include <cmath>
 
 using namespace std;
 
@@ -44,23 +45,30 @@ vector<string> SplitIntoWords(const string& text) {
 
 struct Document {
     int id;
-    int relevance;
+    double relevance;
 };
 
 class SearchServer {
 public:
     void SetStopWords(const string& text) {
         for (const string& word : SplitIntoWords(text)) {
+            if (!word.empty()) {
             stop_words_.insert(word);
         }
     }
+ }
 
     void AddDocument(int document_id, const string& document) {
-        const vector<string> words = SplitIntoWordsNoStop(document);
-        for (const string& word : words) {
-            word_to_documents_[word].insert(document_id);
+    const vector<string> words = SplitIntoWordsNoStop(document);
+           if (words.empty()) {
+            return;
         }
+    const double word_count = static_cast<double>(words.size()); // кол-во слов в векторе
+    for (const string& word : words) {
+        word_to_document_freqs_[word][document_id] += 1.0 / word_count; //Встретили слово, разделяем сколько раз его встретили, на общее число слов, получаем словарь слов, у каждого из них ID и TF
     }
+    ++document_count_; // идём по документам
+}
 
     vector<Document> FindTopDocuments(const string& raw_query) const {
         const Query query = ParseQuery(raw_query);
@@ -79,7 +87,8 @@ public:
 
 private:
     set<string> stop_words_;
-    map<string, set<int>> word_to_documents_;
+    map<string, map<int, double>> word_to_document_freqs_;
+    int document_count_ = 0;
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
@@ -103,44 +112,46 @@ private:
     Query ParseQuery(const string& text) const {
         Query query_words;
         for (const string& word : SplitIntoWords(text)) {
-            if (!word.empty() && word[0] == '-') {
-                query_words.minus_words.insert(word.substr(1)); // Убираем минус и добавляем в minus_words
-            } else {
-                query_words.plus_words.insert(word); // Добавляем в plus_words
+            if (!word.empty()) {
+                if (word[0] == '-') {
+                    query_words.minus_words.insert(word.substr(1)); // Убираем минус и добавляем в minus_words
+                } else {
+                    query_words.plus_words.insert(word); // Добавляем в plus_words
+                }
             }
         }
         return query_words;
     }
 
-    vector<Document> FindAllDocuments(const Query& query) const {
-        map<int, int> document_to_relevance;
+       vector<Document> FindAllDocuments(const Query& query) const {
+        map<int, double> document_to_relevance; //вторую переменную меняем на double
 
         // Обработка плюсовых слов
         for (const string& word : query.plus_words) {
-            if (word_to_documents_.count(word) > 0) {
-                for (const int document_id : word_to_documents_.at(word)) {
-                    document_to_relevance[document_id]++;
+            if (word_to_document_freqs_.count(word) > 0) {
+                const double idf = log(static_cast<double>(document_count_) / word_to_document_freqs_.at(word).size());
+                for (const auto& [document_id, tf] : word_to_document_freqs_.at(word)) {
+                    document_to_relevance[document_id] += tf * idf;
                 }
             }
         }
-
         // Обработка минусовых слов
         for (const string& word : query.minus_words) {
-            if (word_to_documents_.count(word) > 0) {
-                for (const int document_id : word_to_documents_.at(word)) {
+            if (word_to_document_freqs_.count(word) > 0) {
+                for (const auto& [document_id, ignore] : word_to_document_freqs_.at(word)) { //второй элемент нам не нужен в учёте минус-слов
                     document_to_relevance.erase(document_id);
                 }
             }
         }
 
-        // Переносим результаты в вектор
+        // теперь несём всё в вектор
         vector<Document> matched_documents;
         for (const auto& [document_id, relevance] : document_to_relevance) {
-            matched_documents.push_back({document_id, relevance});
-        }
-
-        return matched_documents;
+        matched_documents.push_back({document_id, relevance});
     }
+
+    return matched_documents;
+}
 };
 
 SearchServer CreateSearchServer() {
