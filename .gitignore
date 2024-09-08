@@ -6,3 +6,11 @@
 *.ssh
 .vs/
 .vscode/
+calc.cpp
+int64.cpp
+main.cpp
+shablon.cpp
+stroke2.cpp
+task about task.cpp
+taskabouttask.cpp
+TFIDF.cpp
