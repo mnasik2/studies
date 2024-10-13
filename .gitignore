@@ -23,3 +23,51 @@ src/test3.cpp
 tests/test3.cpp
 CMakeLists.txt
 CMakeLists.txt.bak
+search stroke.cpp
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+CMakeLists.txt
+tests/test_main.cpp
+CMakeLists.txt.bak
+search stroke.cpp
+test5.cpp
+README.md
+.gitignore
+.vscode/
+.idea/
+/search-server/.vs
+build/
+output/
+/search-server/CppProperties.json
+/search-server/build
+/search-server/output
