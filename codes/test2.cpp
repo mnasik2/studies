@@ -1,83 +1,76 @@
-#include "octopus.h"
-
-#include <cassert>
+#include <string_view> // Для использования string_view
+#include <vector>
+#include <string>
 #include <iostream>
+#include "log_duration.h"
 
 using namespace std;
 
-int main() {
-    // Проверка конструирования осьминогов
-    {
-        // По умолчанию осьминог имеет 8 щупалец
-        Octopus default_octopus;
-        assert(default_octopus.GetTentacleCount() == 8);
-
-        // Осьминог может иметь отличное от 8 количество щупалец
-        Octopus quadropus(4);
-        assert(quadropus.GetTentacleCount() == 4);
-
-        // И даже вообще не иметь щупалец
-        Octopus coloboque(0);
-        assert(coloboque.GetTentacleCount() == 0);
-    }
-
-    // Осьминогу можно добавлять щупальца
-    {
-        Octopus octopus(1);
-        Tentacle* t0 = &octopus.GetTentacle(0);
-        Tentacle* t1 = &octopus.AddTentacle();
-        assert(octopus.GetTentacleCount() == 2);
-        Tentacle* t2 = &octopus.AddTentacle();
-        assert(octopus.GetTentacleCount() == 3);
-
-        // После добавления щупалец ранее созданные щупальца не меняют своих адресов
-        assert(&octopus.GetTentacle(0) == t0);
-        assert(&octopus.GetTentacle(1) == t1);
-        assert(&octopus.GetTentacle(2) == t2);
-
-        for (int i = 0; i < octopus.GetTentacleCount(); ++i) {
-            assert(octopus.GetTentacle(i).GetId() == i + 1);
+vector<string> SplitIntoWords(const string& text) {
+    vector<string> words;
+    string word;
+    for (const char c : text) {
+        if (c == ' ') {
+            if (!word.empty()) {
+                words.push_back(word);
+                word.clear();
+            }
+        } else {
+            word += c;
         }
     }
-
-    // Осьминоги могут прицепляться к щупальцам друг друга
-    {
-        Octopus male(2);
-        Octopus female(2);
-
-        assert(male.GetTentacle(0).GetLinkedTentacle() == nullptr);
-
-        male.GetTentacle(0).LinkTo(female.GetTentacle(1));
-        assert(male.GetTentacle(0).GetLinkedTentacle() == &female.GetTentacle(1));
-
-        male.GetTentacle(0).Unlink();
-        assert(male.GetTentacle(0).GetLinkedTentacle() == nullptr);
+    if (!word.empty()) {
+        words.push_back(word);
     }
 
-    // Копия осьминога имеет свою собственную копию щупалец, которые
-    // копируют состояние щупалец оригинального осьминога
-    {
-        // Перебираем осьминогов с разным количеством щупалец
-        for (int num_tentacles = 0; num_tentacles < 10; ++num_tentacles) {
-            Octopus male(num_tentacles);
-            Octopus female(num_tentacles);
-            // Пусть они хватают друг друга за щупальца
-            for (int i = 0; i < num_tentacles; ++i) {
-                male.GetTentacle(i).LinkTo(female.GetTentacle(num_tentacles - 1 - i));
-            }
-
-            Octopus male_copy(male);
-            // Проверяем состояние щупалец копии
-            assert(male_copy.GetTentacleCount() == male.GetTentacleCount());
-            for (int i = 0; i < male_copy.GetTentacleCount(); ++i) {
-                // Каждое щупальце копии размещается по адресу, отличному от адреса оригинального щупальца
-                assert(&male_copy.GetTentacle(i) != &male.GetTentacle(i));
-                // Каждое щупальце копии прицепляется к тому же щупальцу, что и оригинальное
-                assert(male_copy.GetTentacle(i).GetLinkedTentacle() == male.GetTentacle(i).GetLinkedTentacle());
-            }
-        }
-        // Если вы видите эту надпись, то разрушение осьминогов, скорее всего,
-        // прошло без неопределённого поведения
-        cout << "Everything is OK"s << endl;
-    }
+    return words;
 }
+/*Алгоритм будет выглядеть следующим образом:
+Удалите начало из str до первого непробельного символа, воспользовавшись методом remove_prefix. Он уберёт из string_view указанное количество символов.
+В цикле используйте метод find с одним параметром, чтобы найти номер позиции первого пробела.
+Добавьте в результирующий вектор элемент string_view, полученный вызовом метода substr, где начальная позиция будет 0, а конечная — найденная позиция пробела или npos.
+Сдвиньте начало str так, чтобы оно указывало на позицию за пробелом. 
+Это можно сделать методом remove_prefix, передвигая начало str на указанное в аргументе количество позиций.
+Условие цикла нужно изменить. Подумайте, каким именно оно должно быть.
+*/
+vector<string_view> SplitIntoWordsView(string_view str) {
+    vector<string_view> result;
+    str.remove_prefix(min(str.find_first_not_of(" "), str.size()));
+    
+    while (!str.empty()) {
+        // тут выполнен инвариант: str не начинается с пробела
+        int64_t space = str.find(' ');
+
+        // здесь можно избавиться от проверки на равенство npos
+        // если space == npos, метод substr ограничит возвращаемый string_view концом строки
+        result.push_back(str.substr(0, space));
+        str.remove_prefix(min(str.find_first_not_of(" ", space), str.size()));
+    }
+
+    return result;
+}
+
+string GenerateText() {
+    const int SIZE = 10000000;
+    string text(SIZE, 'a');
+    for (int i = 100; i < SIZE; i += 100) {
+        text[i] = ' ';
+    }
+    return text;
+}
+
+int main() {
+    const string text = GenerateText();
+    {
+        LOG_DURATION("string");
+        const auto words = SplitIntoWords(text);
+        cout << words[0] << "\n";
+    }
+    {
+        LOG_DURATION("string_view");
+        const auto words = SplitIntoWordsView(text);
+        cout << words[0] << "\n";
+    }
+
+    return 0;
+} 
